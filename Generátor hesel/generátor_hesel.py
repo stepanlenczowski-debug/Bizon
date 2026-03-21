@@ -53,4 +53,13 @@ for i in range(count):
         password += random.choice(characters)
 
     strength = check_password_strength(password)
-    print(f"{i + 1}. heslo: {password} | Síla: {strength}")
+
+    # emoji podle síly
+    if strength == "SLABÉ":
+        emoji = "🔴"
+    elif strength == "STŘEDNÍ":
+        emoji = "🟡"
+    else:
+        emoji = "🟢"
+
+    print(f"{i + 1}. {emoji} {password} | Síla: {strength}")
