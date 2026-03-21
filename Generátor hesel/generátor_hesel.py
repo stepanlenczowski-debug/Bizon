@@ -1,62 +1,56 @@
-import secrets
+import random
 import string
 
-ERROR_MESSAGE = "Neplatná volba, zadej 'y' nebo 'n'."
+print("----- GENERÁTOR HESEL -----")
+
+# vstupy od uživatele
+count = int(input("Kolik hesel chceš vygenerovat?: "))
+length = int(input("Zadej délku hesla: "))
+use_numbers = input("Chceš použít čísla? (y/n): ").lower()
+use_symbols = input("Chceš použít symboly? (y/n): ").lower()
+
+# základ znaků
+characters = string.ascii_letters
+
+if use_numbers == "y":
+    characters += string.digits
+
+if use_symbols == "y":
+    characters += "!@#$%^&*()_+-="
 
 
-def get_int(prompt: str, min_value: int = 1, max_value: int = 100) -> int:
-    """Načte a validuje celé číslo ve specifikovaném rozsahu."""
-    while True:
-        user_input = input(prompt).strip()
-        if not user_input.isdigit():
-            print("Hodnota musí být celé číslo.")
-            continue
+def check_password_strength(password):
+    has_lower = any(c.islower() for c in password)
+    has_upper = any(c.isupper() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    has_symbol = any(c in "!@#$%^&*()_+-=" for c in password)
 
-        value = int(user_input)
-        if value < min_value or value > max_value:
-            print(f"Zadej číslo mezi {min_value} a {max_value}.")
-            continue
+    score = 0
 
-        return value
+    if len(password) >= 8:
+        score += 1
+    if len(password) >= 12:
+        score += 1
+    if has_lower and has_upper:
+        score += 1
+    if has_digit:
+        score += 1
+    if has_symbol:
+        score += 1
 
-
-def get_yes_no(prompt: str) -> bool:
-    """Vrací True pro 'y', False pro 'n'."""
-    while True:
-        answer = input(prompt).strip().lower()
-        if answer == "y":
-            return True
-        if answer == "n":
-            return False
-
-        print(ERROR_MESSAGE)
-
-
-def generate_password(length: int, use_numbers: bool, use_symbols: bool) -> str:
-    """Vygeneruje bezpečné náhodné heslo podle nastavení."""
-    characters = string.ascii_letters
-    if use_numbers:
-        characters += string.digits
-    if use_symbols:
-        characters += "!@#$%^&*()_+-="
-
-    # Sestavení hesla znak po znaku pro zajištění náhodnosti
-    return "".join(secrets.choice(characters) for _ in range(length))
+    if score <= 2:
+        return "SLABÉ"
+    elif score <= 4:
+        return "STŘEDNÍ"
+    else:
+        return "SILNÉ"
 
 
-def main() -> None:
-    print("----- GENERÁTOR HESEL -----")
+for i in range(count):
+    password = ""
 
-    length = get_int("Zadej délku hesla (4-128): ", min_value=4, max_value=128)
-    use_numbers = get_yes_no("Chceš použít čísla? (y/n): ")
-    use_symbols = get_yes_no("Chceš použít symboly? (y/n): ")
+    for j in range(length):
+        password += random.choice(characters)
 
-    password = generate_password(length, use_numbers, use_symbols)
-
-    print("\nVygenerované heslo:")
-    print(password)
-
-
-if __name__ == "__main__":
-    main()
-
+    strength = check_password_strength(password)
+    print(f"{i + 1}. heslo: {password} | Síla: {strength}")
