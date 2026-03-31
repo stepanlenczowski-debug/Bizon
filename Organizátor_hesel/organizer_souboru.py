@@ -39,4 +39,44 @@ for soubor in os.listdir(slozka):
                 if not os.path.exists(nova_slozka):
                     os.mkdir(nova_slozka)
 
+                nova_cesta = os.path.join(nova_slozka, soubor)
+
+                # když už tam soubor se stejným názvem je, přidá číslo
+                if os.path.exists(nova_cesta):
+                    pocitadlo = 1
+                    while True:
+                        novy_nazev = f"{nazev}_{pocitadlo}{pripona}"
+                        nova_cesta = os.path.join(nova_slozka, novy_nazev)
+                        if not os.path.exists(nova_cesta):
+                            break
+                        pocitadlo += 1
+
+                shutil.move(puvodni_cesta, nova_cesta)
+                print(f"Přesunut: {soubor} -> {cilova_slozka}")
+                presunuto = True
+                break
+
+        # když přípona není v žádné kategorii
+        if not presunuto:
+            ostatni_slozka = os.path.join(slozka, "others")
+
+            if not os.path.exists(ostatni_slozka):
+                os.mkdir(ostatni_slozka)
+
+            nova_cesta = os.path.join(ostatni_slozka, soubor)
+
+            if os.path.exists(nova_cesta):
+                pocitadlo = 1
+                while True:
+                    novy_nazev = f"{nazev}_{pocitadlo}{pripona}"
+                    nova_cesta = os.path.join(ostatni_slozka, novy_nazev)
+                    if not os.path.exists(nova_cesta):
+                        break
+                    pocitadlo += 1
+
+            shutil.move(puvodni_cesta, nova_cesta)
+            print(f"Přesunut: {soubor} -> others")
+
+print("Hotovo, soubory jsou roztříděné.")
+
                 
