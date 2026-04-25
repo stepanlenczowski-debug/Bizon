@@ -28,19 +28,19 @@ def get_valid_moves(r, c):
     moves = []
     piece = board[r][c]
 
-    if piece.lower() == "p":  # pěšec
+    # ----------------
+    # PĚŠEC
+    # ----------------
+    if piece.lower() == "p":
         direction = -1 if piece.isupper() else 1
 
-        # dopředu
         if 0 <= r + direction < 8 and board[r + direction][c] == "":
             moves.append((r + direction, c))
 
-        # první tah o 2
         if (r == 6 and piece.isupper()) or (r == 1 and piece.islower()):
             if board[r + direction][c] == "" and board[r + 2 * direction][c] == "":
                 moves.append((r + 2 * direction, c))
 
-        # braní diagonálně
         for dc in [-1, 1]:
             nc = c + dc
             nr = r + direction
@@ -48,6 +48,31 @@ def get_valid_moves(r, c):
                 target = board[nr][nc]
                 if target != "" and target.isupper() != piece.isupper():
                     moves.append((nr, nc))
+
+    # ----------------
+    # VĚŽ
+    # ----------------
+    if piece.lower() == "r":
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+        for dr, dc in directions:
+            nr, nc = r, c
+
+            while True:
+                nr += dr
+                nc += dc
+
+                if not (0 <= nr < 8 and 0 <= nc < 8):
+                    break
+
+                target = board[nr][nc]
+
+                if target == "":
+                    moves.append((nr, nc))
+                else:
+                    if target.isupper() != piece.isupper():
+                        moves.append((nr, nc))
+                    break
 
     return moves
 
@@ -58,14 +83,12 @@ def draw_board(selected_sq, moves):
             color = WHITE if (r + c) % 2 == 0 else GREEN
             pygame.draw.rect(win, color, (c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
-            # vybrané pole
             if selected_sq == (r, c):
                 s = pygame.Surface((SQ_SIZE, SQ_SIZE))
                 s.set_alpha(150)
                 s.fill((255, 255, 0))
                 win.blit(s, (c * SQ_SIZE, r * SQ_SIZE))
 
-            # možné tahy
             if (r, c) in moves:
                 s = pygame.Surface((SQ_SIZE, SQ_SIZE))
                 s.set_alpha(100)
