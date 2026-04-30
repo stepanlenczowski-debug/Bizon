@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+# Jednoduchá šachová hra v Pygame
+# Implementuje základní pohyby pěšců, věží a jezdců
+
+>>>>>>> 8cfdf6ba86ff915ffcfa4f2e9429fb554316caf3
 import pygame
 
 pygame.init()
@@ -67,6 +73,7 @@ def get_valid_moves(r, c):
                 if target == "":
                     moves.append((nr, nc))
                 else:
+<<<<<<< HEAD
                     if target.isupper() != piece.isupper():
                         moves.append((nr, nc))
                     break
@@ -95,9 +102,30 @@ def get_valid_moves(r, c):
                 if target == "":
                     moves.append((nr, nc))
                 else:
+=======
+>>>>>>> 8cfdf6ba86ff915ffcfa4f2e9429fb554316caf3
                     if target.isupper() != piece.isupper():
                         moves.append((nr, nc))
                     break
+
+    # ----------------
+    # JEZDEC (KŮŇ) 🐎
+    # ----------------
+    if piece.lower() == "n":
+        knight_moves = [
+            (-2, -1), (-2, 1),
+            (-1, -2), (-1, 2),
+            (1, -2), (1, 2),
+            (2, -1), (2, 1)
+        ]
+
+        for dr, dc in knight_moves:
+            nr, nc = r + dr, c + dc
+
+            if 0 <= nr < 8 and 0 <= nc < 8:
+                target = board[nr][nc]
+                if target == "" or target.isupper() != piece.isupper():
+                    moves.append((nr, nc))
 
     return moves
 
@@ -145,6 +173,10 @@ def main():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 c, r = event.pos[0] // SQ_SIZE, event.pos[1] // SQ_SIZE
+
+                # ochrana proti kliknutí mimo šachovnici
+                if not (0 <= r < 8 and 0 <= c < 8):
+                    continue
 
                 if selected_sq:
                     start_r, start_c = selected_sq
