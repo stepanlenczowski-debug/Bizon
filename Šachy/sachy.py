@@ -1,6 +1,9 @@
+<<<<<<< HEAD
+=======
 # Jednoduchá šachová hra v Pygame
 # Implementuje základní pohyby pěšců, věží a jezdců
 
+>>>>>>> 8cfdf6ba86ff915ffcfa4f2e9429fb554316caf3
 import pygame
 
 pygame.init()
@@ -70,6 +73,37 @@ def get_valid_moves(r, c):
                 if target == "":
                     moves.append((nr, nc))
                 else:
+<<<<<<< HEAD
+                    if target.isupper() != piece.isupper():
+                        moves.append((nr, nc))
+                    break
+
+    # ----------------
+    # DÁMA
+    # ----------------
+    if piece.lower() == "q":
+        directions = [
+            (-1, 0), (1, 0), (0, -1), (0, 1),   # rovně
+            (-1, -1), (-1, 1), (1, -1), (1, 1)  # diagonálně
+        ]
+
+        for dr, dc in directions:
+            nr, nc = r, c
+
+            while True:
+                nr += dr
+                nc += dc
+
+                if not (0 <= nr < 8 and 0 <= nc < 8):
+                    break
+
+                target = board[nr][nc]
+
+                if target == "":
+                    moves.append((nr, nc))
+                else:
+=======
+>>>>>>> 8cfdf6ba86ff915ffcfa4f2e9429fb554316caf3
                     if target.isupper() != piece.isupper():
                         moves.append((nr, nc))
                     break
