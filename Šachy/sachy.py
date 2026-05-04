@@ -52,7 +52,7 @@ def get_valid_moves(r, c):
     # ----------------
     # VĚŽ
     # ----------------
-    if piece.lower() == "r":
+    elif piece.lower() == "r":
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
         for dr, dc in directions:
@@ -77,7 +77,7 @@ def get_valid_moves(r, c):
     # ----------------
     # JEZDEC (KŮŇ) 🐎
     # ----------------
-    if piece.lower() == "n":
+    elif piece.lower() == "n":
         knight_moves = [
             (-2, -1), (-2, 1),
             (-1, -2), (-1, 2),
@@ -86,6 +86,74 @@ def get_valid_moves(r, c):
         ]
 
         for dr, dc in knight_moves:
+            nr, nc = r + dr, c + dc
+
+            if 0 <= nr < 8 and 0 <= nc < 8:
+                target = board[nr][nc]
+                if target == "" or target.isupper() != piece.isupper():
+                    moves.append((nr, nc))
+
+    # ----------------
+    # BISKUP
+    # ----------------
+    elif piece.lower() == "b":
+        directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+
+        for dr, dc in directions:
+            nr, nc = r, c
+
+            while True:
+                nr += dr
+                nc += dc
+
+                if not (0 <= nr < 8 and 0 <= nc < 8):
+                    break
+
+                target = board[nr][nc]
+
+                if target == "":
+                    moves.append((nr, nc))
+                else:
+                    if target.isupper() != piece.isupper():
+                        moves.append((nr, nc))
+                    break
+
+    # ----------------
+    # KRÁLOVNA
+    # ----------------
+    elif piece.lower() == "q":
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
+
+        for dr, dc in directions:
+            nr, nc = r, c
+
+            while True:
+                nr += dr
+                nc += dc
+
+                if not (0 <= nr < 8 and 0 <= nc < 8):
+                    break
+
+                target = board[nr][nc]
+
+                if target == "":
+                    moves.append((nr, nc))
+                else:
+                    if target.isupper() != piece.isupper():
+                        moves.append((nr, nc))
+                    break
+
+    # ----------------
+    # KRÁL
+    # ----------------
+    elif piece.lower() == "k":
+        king_moves = [
+            (-1, -1), (-1, 0), (-1, 1),
+            (0, -1), (0, 1),
+            (1, -1), (1, 0), (1, 1)
+        ]
+
+        for dr, dc in king_moves:
             nr, nc = r + dr, c + dc
 
             if 0 <= nr < 8 and 0 <= nc < 8:
@@ -151,10 +219,25 @@ def main():
                     if (r, c) in moves:
                         board[r][c] = piece
                         board[start_r][start_c] = ""
+                        
+                        # Transformace pěšce na konci
+                        if piece.lower() == "p" and ((piece.isupper() and r == 0) or (piece.islower() and r == 7)):
+                            board[r][c] = "Q" if piece.isupper() else "q"
+                        
                         turn = "black" if turn == "white" else "white"
-
-                    selected_sq = None
-                    moves = []
+                        selected_sq = None
+                        moves = []
+                    elif board[r][c] != "":
+                        is_white = board[r][c].isupper()
+                        if (is_white and turn == "white") or (not is_white and turn == "black"):
+                            selected_sq = (r, c)
+                            moves = get_valid_moves(r, c)
+                        else:
+                            selected_sq = None
+                            moves = []
+                    else:
+                        selected_sq = None
+                        moves = []
 
                 else:
                     if board[r][c] != "":
