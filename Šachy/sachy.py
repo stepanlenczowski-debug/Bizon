@@ -1,16 +1,12 @@
-<<<<<<< HEAD
-=======
-# Jednoduchá šachová hra v Pygame
-# Implementuje základní pohyby pěšců, věží a jezdců
-
->>>>>>> 8cfdf6ba86ff915ffcfa4f2e9429fb554316caf3
 import pygame
 
 pygame.init()
+
 WIDTH, HEIGHT = 600, 600
 SQ_SIZE = WIDTH // 8
 
-WHITE, GREEN = (235, 235, 208), (119, 148, 85)
+WHITE = (235, 235, 208)
+GREEN = (119, 148, 85)
 
 board = [
     ["r", "n", "b", "q", "k", "b", "n", "r"],
@@ -24,16 +20,17 @@ board = [
 ]
 
 win = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Chess")
+
 font = pygame.font.SysFont("Arial", 32, bold=True)
+clock = pygame.time.Clock()
 
 
 def get_valid_moves(r, c):
     moves = []
     piece = board[r][c]
 
-    # ----------------
     # PĚŠEC
-    # ----------------
     if piece.lower() == "p":
         direction = -1 if piece.isupper() else 1
 
@@ -45,16 +42,15 @@ def get_valid_moves(r, c):
                 moves.append((r + 2 * direction, c))
 
         for dc in [-1, 1]:
-            nc = c + dc
-            nr = r + direction
-            if 0 <= nc < 8 and 0 <= nr < 8:
+            nr, nc = r + direction, c + dc
+
+            if 0 <= nr < 8 and 0 <= nc < 8:
                 target = board[nr][nc]
+
                 if target != "" and target.isupper() != piece.isupper():
                     moves.append((nr, nc))
 
-    # ----------------
     # VĚŽ
-    # ----------------
     elif piece.lower() == "r":
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
@@ -73,44 +69,11 @@ def get_valid_moves(r, c):
                 if target == "":
                     moves.append((nr, nc))
                 else:
-<<<<<<< HEAD
                     if target.isupper() != piece.isupper():
                         moves.append((nr, nc))
                     break
 
-    # ----------------
-    # DÁMA
-    # ----------------
-    if piece.lower() == "q":
-        directions = [
-            (-1, 0), (1, 0), (0, -1), (0, 1),   # rovně
-            (-1, -1), (-1, 1), (1, -1), (1, 1)  # diagonálně
-        ]
-
-        for dr, dc in directions:
-            nr, nc = r, c
-
-            while True:
-                nr += dr
-                nc += dc
-
-                if not (0 <= nr < 8 and 0 <= nc < 8):
-                    break
-
-                target = board[nr][nc]
-
-                if target == "":
-                    moves.append((nr, nc))
-                else:
-=======
->>>>>>> 8cfdf6ba86ff915ffcfa4f2e9429fb554316caf3
-                    if target.isupper() != piece.isupper():
-                        moves.append((nr, nc))
-                    break
-
-    # ----------------
-    # JEZDEC (KŮŇ) 🐎
-    # ----------------
+    # JEZDEC
     elif piece.lower() == "n":
         knight_moves = [
             (-2, -1), (-2, 1),
@@ -124,12 +87,11 @@ def get_valid_moves(r, c):
 
             if 0 <= nr < 8 and 0 <= nc < 8:
                 target = board[nr][nc]
+
                 if target == "" or target.isupper() != piece.isupper():
                     moves.append((nr, nc))
 
-    # ----------------
     # BISKUP
-    # ----------------
     elif piece.lower() == "b":
         directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
 
@@ -152,11 +114,12 @@ def get_valid_moves(r, c):
                         moves.append((nr, nc))
                     break
 
-    # ----------------
-    # KRÁLOVNA
-    # ----------------
+    # DÁMA
     elif piece.lower() == "q":
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
+        directions = [
+            (-1, 0), (1, 0), (0, -1), (0, 1),
+            (-1, -1), (-1, 1), (1, -1), (1, 1)
+        ]
 
         for dr, dc in directions:
             nr, nc = r, c
@@ -177,9 +140,7 @@ def get_valid_moves(r, c):
                         moves.append((nr, nc))
                     break
 
-    # ----------------
     # KRÁL
-    # ----------------
     elif piece.lower() == "k":
         king_moves = [
             (-1, -1), (-1, 0), (-1, 1),
@@ -192,6 +153,7 @@ def get_valid_moves(r, c):
 
             if 0 <= nr < 8 and 0 <= nc < 8:
                 target = board[nr][nc]
+
                 if target == "" or target.isupper() != piece.isupper():
                     moves.append((nr, nc))
 
@@ -202,14 +164,21 @@ def draw_board(selected_sq, moves):
     for r in range(8):
         for c in range(8):
             color = WHITE if (r + c) % 2 == 0 else GREEN
-            pygame.draw.rect(win, color, (c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
+            pygame.draw.rect(
+                win,
+                color,
+                (c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE)
+            )
+
+            # vybrané políčko
             if selected_sq == (r, c):
                 s = pygame.Surface((SQ_SIZE, SQ_SIZE))
                 s.set_alpha(150)
                 s.fill((255, 255, 0))
                 win.blit(s, (c * SQ_SIZE, r * SQ_SIZE))
 
+            # možné tahy
             if (r, c) in moves:
                 s = pygame.Surface((SQ_SIZE, SQ_SIZE))
                 s.set_alpha(100)
@@ -221,10 +190,19 @@ def draw_pieces():
     for r in range(8):
         for c in range(8):
             piece = board[r][c]
+
             if piece:
                 color = (255, 255, 255) if piece.isupper() else (0, 0, 0)
+
                 txt = font.render(piece, True, color)
-                rect = txt.get_rect(center=(c * SQ_SIZE + SQ_SIZE // 2, r * SQ_SIZE + SQ_SIZE // 2))
+
+                rect = txt.get_rect(
+                    center=(
+                        c * SQ_SIZE + SQ_SIZE // 2,
+                        r * SQ_SIZE + SQ_SIZE // 2
+                    )
+                )
+
                 win.blit(txt, rect)
 
 
@@ -235,14 +213,17 @@ def main():
     turn = "white"
 
     while run:
+        clock.tick(60)
+
         for event in pygame.event.get():
+
             if event.type == pygame.QUIT:
                 run = False
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                c, r = event.pos[0] // SQ_SIZE, event.pos[1] // SQ_SIZE
+                c = event.pos[0] // SQ_SIZE
+                r = event.pos[1] // SQ_SIZE
 
-                # ochrana proti kliknutí mimo šachovnici
                 if not (0 <= r < 8 and 0 <= c < 8):
                     continue
 
@@ -253,22 +234,33 @@ def main():
                     if (r, c) in moves:
                         board[r][c] = piece
                         board[start_r][start_c] = ""
-                        
-                        # Transformace pěšce na konci
-                        if piece.lower() == "p" and ((piece.isupper() and r == 0) or (piece.islower() and r == 7)):
-                            board[r][c] = "Q" if piece.isupper() else "q"
-                        
+
+                        # proměna pěšce
+                        if piece.lower() == "p":
+                            if (piece.isupper() and r == 0) or (
+                                piece.islower() and r == 7
+                            ):
+                                board[r][c] = "Q" if piece.isupper() else "q"
+
                         turn = "black" if turn == "white" else "white"
+
                         selected_sq = None
                         moves = []
+
                     elif board[r][c] != "":
                         is_white = board[r][c].isupper()
-                        if (is_white and turn == "white") or (not is_white and turn == "black"):
+
+                        if (
+                            (is_white and turn == "white")
+                            or
+                            (not is_white and turn == "black")
+                        ):
                             selected_sq = (r, c)
                             moves = get_valid_moves(r, c)
                         else:
                             selected_sq = None
                             moves = []
+
                     else:
                         selected_sq = None
                         moves = []
@@ -276,12 +268,18 @@ def main():
                 else:
                     if board[r][c] != "":
                         is_white = board[r][c].isupper()
-                        if (is_white and turn == "white") or (not is_white and turn == "black"):
+
+                        if (
+                            (is_white and turn == "white")
+                            or
+                            (not is_white and turn == "black")
+                        ):
                             selected_sq = (r, c)
                             moves = get_valid_moves(r, c)
 
         draw_board(selected_sq, moves)
         draw_pieces()
+
         pygame.display.flip()
 
     pygame.quit()
