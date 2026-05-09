@@ -25,6 +25,16 @@ pygame.display.set_caption("Chess")
 font = pygame.font.SysFont("Arial", 32, bold=True)
 clock = pygame.time.Clock()
 
+# ROŠÁDA STAV
+white_king_moved = False
+black_king_moved = False
+
+white_rook_left_moved = False
+white_rook_right_moved = False
+
+black_rook_left_moved = False
+black_rook_right_moved = False
+
 
 def get_valid_moves(r, c):
     moves = []
@@ -140,7 +150,7 @@ def get_valid_moves(r, c):
                         moves.append((nr, nc))
                     break
 
-    # KRÁL
+    # KRÁL + ROŠÁDA
     elif piece.lower() == "k":
         king_moves = [
             (-1, -1), (-1, 0), (-1, 1),
@@ -157,6 +167,23 @@ def get_valid_moves(r, c):
                 if target == "" or target.isupper() != piece.isupper():
                     moves.append((nr, nc))
 
+        # ROŠÁDA
+        if piece == "K" and not white_king_moved:
+
+            if not white_rook_right_moved and board[7][5] == "" and board[7][6] == "" and board[7][7] == "R":
+                moves.append((7, 6))
+
+            if not white_rook_left_moved and board[7][1] == "" and board[7][2] == "" and board[7][3] == "" and board[7][0] == "R":
+                moves.append((7, 2))
+
+        if piece == "k" and not black_king_moved:
+
+            if not black_rook_right_moved and board[0][5] == "" and board[0][6] == "" and board[0][7] == "r":
+                moves.append((0, 6))
+
+            if not black_rook_left_moved and board[0][1] == "" and board[0][2] == "" and board[0][3] == "" and board[0][0] == "r":
+                moves.append((0, 2))
+
     return moves
 
 
@@ -165,20 +192,14 @@ def draw_board(selected_sq, moves):
         for c in range(8):
             color = WHITE if (r + c) % 2 == 0 else GREEN
 
-            pygame.draw.rect(
-                win,
-                color,
-                (c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE)
-            )
+            pygame.draw.rect(win, color, (c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
-            # vybrané políčko
             if selected_sq == (r, c):
                 s = pygame.Surface((SQ_SIZE, SQ_SIZE))
                 s.set_alpha(150)
                 s.fill((255, 255, 0))
                 win.blit(s, (c * SQ_SIZE, r * SQ_SIZE))
 
-            # možné tahy
             if (r, c) in moves:
                 s = pygame.Surface((SQ_SIZE, SQ_SIZE))
                 s.set_alpha(100)
@@ -196,17 +217,17 @@ def draw_pieces():
 
                 txt = font.render(piece, True, color)
 
-                rect = txt.get_rect(
-                    center=(
-                        c * SQ_SIZE + SQ_SIZE // 2,
-                        r * SQ_SIZE + SQ_SIZE // 2
-                    )
+                win.blit(
+                    txt,
+                    (c * SQ_SIZE + SQ_SIZE // 3, r * SQ_SIZE + SQ_SIZE // 4)
                 )
-
-                win.blit(txt, rect)
 
 
 def main():
+    global white_king_moved, black_king_moved
+    global white_rook_left_moved, white_rook_right_moved
+    global black_rook_left_moved, black_rook_right_moved
+
     run = True
     selected_sq = None
     moves = []
@@ -224,9 +245,6 @@ def main():
                 c = event.pos[0] // SQ_SIZE
                 r = event.pos[1] // SQ_SIZE
 
-                if not (0 <= r < 8 and 0 <= c < 8):
-                    continue
-
                 if selected_sq:
                     start_r, start_c = selected_sq
                     piece = board[start_r][start_c]
@@ -235,31 +253,45 @@ def main():
                         board[r][c] = piece
                         board[start_r][start_c] = ""
 
-                        # proměna pěšce
-                        if piece.lower() == "p":
-                            if (piece.isupper() and r == 0) or (
-                                piece.islower() and r == 7
-                            ):
-                                board[r][c] = "Q" if piece.isupper() else "q"
+                        # ROŠÁDA AKCE
+                        if piece == "K":
+                            white_king_moved = True
+
+                            if (r, c) == (7, 6):
+                                board[7][5] = "R"
+                                board[7][7] = ""
+
+                            elif (r, c) == (7, 2):
+                                board[7][3] = "R"
+                                board[7][0] = ""
+
+                        elif piece == "k":
+                            black_king_moved = True
+
+                            if (r, c) == (0, 6):
+                                board[0][5] = "r"
+                                board[0][7] = ""
+
+                            elif (r, c) == (0, 2):
+                                board[0][3] = "r"
+                                board[0][0] = ""
+
+                        elif piece == "R":
+                            if start_r == 7 and start_c == 0:
+                                white_rook_left_moved = True
+                            elif start_r == 7 and start_c == 7:
+                                white_rook_right_moved = True
+
+                        elif piece == "r":
+                            if start_r == 0 and start_c == 0:
+                                black_rook_left_moved = True
+                            elif start_r == 0 and start_c == 7:
+                                black_rook_right_moved = True
 
                         turn = "black" if turn == "white" else "white"
 
                         selected_sq = None
                         moves = []
-
-                    elif board[r][c] != "":
-                        is_white = board[r][c].isupper()
-
-                        if (
-                            (is_white and turn == "white")
-                            or
-                            (not is_white and turn == "black")
-                        ):
-                            selected_sq = (r, c)
-                            moves = get_valid_moves(r, c)
-                        else:
-                            selected_sq = None
-                            moves = []
 
                     else:
                         selected_sq = None
@@ -269,11 +301,7 @@ def main():
                     if board[r][c] != "":
                         is_white = board[r][c].isupper()
 
-                        if (
-                            (is_white and turn == "white")
-                            or
-                            (not is_white and turn == "black")
-                        ):
+                        if (is_white and turn == "white") or (not is_white and turn == "black"):
                             selected_sq = (r, c)
                             moves = get_valid_moves(r, c)
 
