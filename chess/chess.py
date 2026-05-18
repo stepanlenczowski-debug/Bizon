@@ -1,12 +1,12 @@
 """
-Simple Chess Game in Pygame
+Jednoduchá šachová hra v Pygame.
 
-Implements basic moves for all pieces including:
-- Pawns, Rooks, Knights, Bishops, Queen and King
-- Pawn promotion at the end of the board
-- Castling (when conditions are met)
+Podporuje základní tahy pro všechny figury včetně:
+- pěšců, věží, jezdců, střelců, dámy a krále
+- proměny pěšce na konci desky
+- rošády (pokud jsou splněny podmínky)
 
-White pieces are uppercase, black pieces are lowercase.
+Bílé figurky jsou velká písmena, černé malé.
 """
 
 import pygame
@@ -17,6 +17,7 @@ SQ_SIZE = WIDTH // 8
 
 WHITE, GREEN = (235, 235, 208), (119, 148, 85)
 
+# Počáteční nastavení šachovnice
 board = [
     ["r", "n", "b", "q", "k", "b", "n", "r"],
     ["p", "p", "p", "p", "p", "p", "p", "p"],
@@ -28,26 +29,94 @@ board = [
     ["R", "N", "B", "Q", "K", "B", "N", "R"]
 ]
 
-# Tracking piece movements for castling validation
+# Sledování, zda král nebo věž již provedly tah (potřebné pro rošádu)
 white_king_moved = False
 black_king_moved = False
-white_rook_moved = {0: False, 7: False}  # a1 and h1
-black_rook_moved = {0: False, 7: False}  # a8 and h8
+white_rook_moved = {0: False, 7: False}  # a1 a h1
+black_rook_moved = {0: False, 7: False}  # a8 a h8
 
 win = pygame.display.set_mode((WIDTH, HEIGHT))
 font = pygame.font.SysFont("Arial", 32, bold=True)
 
 
+def is_square_attacked(r, c, attacker_is_white):
+    """
+    Zjistí, zda pole (r, c) je napadeno protivníkovou figurou.
+    """
+    enemy_pawn = "P" if attacker_is_white else "p"
+    enemy_knight = "N" if attacker_is_white else "n"
+    enemy_bishop = "B" if attacker_is_white else "b"
+    enemy_rook = "R" if attacker_is_white else "r"
+    enemy_queen = "Q" if attacker_is_white else "q"
+    enemy_king = "K" if attacker_is_white else "k"
+
+    # Kontrola útoku pěšcem
+    pawn_row = r + 1 if attacker_is_white else r - 1
+    for dc in (-1, 1):
+        pc = c + dc
+        if 0 <= pawn_row < 8 and 0 <= pc < 8:
+            if board[pawn_row][pc] == enemy_pawn:
+                return True
+
+    # Kontrola útoku jezdcem
+    knight_moves = [
+        (-2, -1), (-2, 1),
+        (-1, -2), (-1, 2),
+        (1, -2), (1, 2),
+        (2, -1), (2, 1)
+    ]
+    for dr, dc in knight_moves:
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < 8 and 0 <= nc < 8 and board[nr][nc] == enemy_knight:
+            return True
+
+    # Kontrola rovných linií pro věž a dámu
+    straight_dirs = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    for dr, dc in straight_dirs:
+        nr, nc = r, c
+        while True:
+            nr += dr
+            nc += dc
+            if not (0 <= nr < 8 and 0 <= nc < 8):
+                break
+            target = board[nr][nc]
+            if target == "":
+                continue
+            if target == enemy_rook or target == enemy_queen:
+                return True
+            break
+
+    # Kontrola diagonál pro střelce a dámu
+    diagonal_dirs = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+    for dr, dc in diagonal_dirs:
+        nr, nc = r, c
+        while True:
+            nr += dr
+            nc += dc
+            if not (0 <= nr < 8 and 0 <= nc < 8):
+                break
+            target = board[nr][nc]
+            if target == "":
+                continue
+            if target == enemy_bishop or target == enemy_queen:
+                return True
+            break
+
+    # Kontrola okolních polí pro útok králem
+    for dr in (-1, 0, 1):
+        for dc in (-1, 0, 1):
+            if dr == 0 and dc == 0:
+                continue
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < 8 and 0 <= nc < 8 and board[nr][nc] == enemy_king:
+                return True
+
+    return False
+
+
 def get_valid_moves(r, c):
     """
-    Returns a list of all valid moves for a piece at position (r, c).
-    
-    Args:
-        r (int): Row on the chessboard (0-7)
-        c (int): Column on the chessboard (0-7)
-    
-    Returns:
-        list: List of tuples (r, c) representing valid moves
+    Vrací seznam všech validních tahů figurky na pozici (r, c).
     """
     moves = []
     piece = board[r][c]
@@ -56,7 +125,7 @@ def get_valid_moves(r, c):
         return moves
 
     # ----------------
-    # PAWN
+    # PĚŠEC
     # ----------------
     if piece.lower() == "p":
         direction = -1 if piece.isupper() else 1
@@ -77,23 +146,19 @@ def get_valid_moves(r, c):
                     moves.append((nr, nc))
 
     # ----------------
-    # ROOK
+    # VĚŽ
     # ----------------
     elif piece.lower() == "r":
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
         for dr, dc in directions:
             nr, nc = r, c
-
             while True:
                 nr += dr
                 nc += dc
-
                 if not (0 <= nr < 8 and 0 <= nc < 8):
                     break
-
                 target = board[nr][nc]
-
                 if target == "":
                     moves.append((nr, nc))
                 else:
@@ -102,7 +167,7 @@ def get_valid_moves(r, c):
                     break
 
     # ----------------
-    # KNIGHT 🐎
+    # JEDINEC
     # ----------------
     elif piece.lower() == "n":
         knight_moves = [
@@ -111,33 +176,26 @@ def get_valid_moves(r, c):
             (1, -2), (1, 2),
             (2, -1), (2, 1)
         ]
-
         for dr, dc in knight_moves:
             nr, nc = r + dr, c + dc
-
             if 0 <= nr < 8 and 0 <= nc < 8:
                 target = board[nr][nc]
                 if target == "" or target.isupper() != piece.isupper():
                     moves.append((nr, nc))
 
     # ----------------
-    # BISHOP
+    # STŘELEC
     # ----------------
     elif piece.lower() == "b":
         directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
-
         for dr, dc in directions:
             nr, nc = r, c
-
             while True:
                 nr += dr
                 nc += dc
-
                 if not (0 <= nr < 8 and 0 <= nc < 8):
                     break
-
                 target = board[nr][nc]
-
                 if target == "":
                     moves.append((nr, nc))
                 else:
@@ -146,23 +204,18 @@ def get_valid_moves(r, c):
                     break
 
     # ----------------
-    # QUEEN
+    # DÁMA
     # ----------------
     elif piece.lower() == "q":
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
-
         for dr, dc in directions:
             nr, nc = r, c
-
             while True:
                 nr += dr
                 nc += dc
-
                 if not (0 <= nr < 8 and 0 <= nc < 8):
                     break
-
                 target = board[nr][nc]
-
                 if target == "":
                     moves.append((nr, nc))
                 else:
@@ -171,7 +224,7 @@ def get_valid_moves(r, c):
                     break
 
     # ----------------
-    # KING
+    # KRÁL
     # ----------------
     elif piece.lower() == "k":
         king_moves = [
@@ -179,10 +232,8 @@ def get_valid_moves(r, c):
             (0, -1), (0, 1),
             (1, -1), (1, 0), (1, 1)
         ]
-
         for dr, dc in king_moves:
             nr, nc = r + dr, c + dc
-
             if 0 <= nr < 8 and 0 <= nc < 8:
                 target = board[nr][nc]
                 if target == "" or target.isupper() != piece.isupper():
@@ -203,11 +254,7 @@ def get_valid_moves(r, c):
 
 def draw_board(selected_sq, moves):
     """
-    Draws the chessboard with color highlighting for selected piece and available moves.
-    
-    Args:
-        selected_sq (tuple): Tuple (r, c) of selected piece or None
-        moves (list): List of tuples representing available moves
+    Vykreslí šachovnici a zvýrazní vybranou figurku a dostupné tahy.
     """
     for r in range(8):
         for c in range(8):
@@ -229,8 +276,7 @@ def draw_board(selected_sq, moves):
 
 def draw_pieces():
     """
-    Draws all pieces at correct positions with proper colors.
-    Pieces are centered using rect.center.
+    Vykreslí figurky na šachovnici.
     """
     for r in range(8):
         for c in range(8):
@@ -244,10 +290,7 @@ def draw_pieces():
 
 def mark_king_moved(piece):
     """
-    Marks a king as moved, preventing castling.
-    
-    Args:
-        piece (str): Piece (K or k)
+    Označí krále jako pohybovaného, aby nebyla povolena rošáda.
     """
     global white_king_moved, black_king_moved
     if piece == "K":
@@ -258,11 +301,7 @@ def mark_king_moved(piece):
 
 def mark_rook_moved(piece, c):
     """
-    Marks a rook as moved, preventing castling.
-    
-    Args:
-        piece (str): Piece (R or r)
-        c (int): Column (0 for a-file, 7 for h-file)
+    Označí věž jako pohybovanou, aby nebyla povolena rošáda z její strany.
     """
     global white_rook_moved, black_rook_moved
     if piece == "R" and c in [0, 7]:
@@ -273,49 +312,42 @@ def mark_rook_moved(piece, c):
 
 def is_castling_possible(king_r, king_c, rook_c, is_white):
     """
-    Checks if castling is possible.
-    
-    Args:
-        king_r (int): King's row
-        king_c (int): King's column (4)
-        rook_c (int): Rook's column (0 or 7)
-        is_white (bool): Whether it's white king
-    
-    Returns:
-        bool: True if castling is possible
+    Zjistí, zda je rošáda možná pro daného krále a věž.
     """
     king_moved = white_king_moved if is_white else black_king_moved
     rook_moved = white_rook_moved if is_white else black_rook_moved
-    
-    if king_moved or rook_moved[rook_c]:
+    king_piece = "K" if is_white else "k"
+    rook_piece = "R" if is_white else "r"
+
+    if king_c != 4 or king_moved or rook_moved[rook_c]:
         return False
-    
-    # Check if there are pieces between king and rook
+
+    if board[king_r][king_c] != king_piece or board[king_r][rook_c] != rook_piece:
+        return False
+
     start, end = min(king_c, rook_c), max(king_c, rook_c)
     for c in range(start + 1, end):
         if board[king_r][c] != "":
             return False
-    
+
+    if is_square_attacked(king_r, king_c, not is_white):
+        return False
+
+    step = 1 if rook_c == 7 else -1
+    for i in range(1, 3):
+        check_c = king_c + step * i
+        if is_square_attacked(king_r, check_c, not is_white):
+            return False
+
     return True
 
 
 def perform_move(start_r, start_c, end_r, end_c, is_white):
     """
-    Executes a move including special moves (pawn promotion, castling).
-    
-    Args:
-        start_r (int): Starting row
-        start_c (int): Starting column
-        end_r (int): Ending row
-        end_c (int): Ending column
-        is_white (bool): Whether it's a white move
-    
-    Returns:
-        bool: True if move was executed
+    Provádí tah včetně speciálních tahů jako proměna pěšce a rošáda.
     """
     piece = board[start_r][start_c]
-    
-    # Pawn promotion
+
     if piece.lower() == "p" and ((piece.isupper() and end_r == 0) or (piece.islower() and end_r == 7)):
         board[end_r][end_c] = "Q" if piece.isupper() else "q"
         board[start_r][start_c] = ""
@@ -323,7 +355,6 @@ def perform_move(start_r, start_c, end_r, end_c, is_white):
         board[end_r][end_c] = piece
         board[start_r][start_c] = ""
 
-        # Castling move: king moves two squares horizontally
         if piece.lower() == "k" and abs(end_c - start_c) == 2:
             if end_c == 6:
                 rook_start_c, rook_end_c = 7, 5
@@ -334,45 +365,32 @@ def perform_move(start_r, start_c, end_r, end_c, is_white):
             board[end_r][rook_start_c] = ""
             mark_rook_moved(rook_piece, rook_start_c)
 
-    # Track movements for castling
     mark_king_moved(piece)
     mark_rook_moved(piece, start_c)
-    
+
     return True
 
 
 def handle_click(mouse_pos, selected_sq, moves, turn):
     """
-    Handles mouse click on the chessboard.
-    
-    Args:
-        mouse_pos (tuple): Mouse position (x, y)
-        selected_sq (tuple): Currently selected piece
-        moves (list): Available moves for selected piece
-        turn (str): Current turn ('white' or 'black')
-    
-    Returns:
-        tuple: (new selected_sq, new moves, new turn)
+    Zpracuje kliknutí myší a provede výběr nebo tah.
     """
     c, r = mouse_pos[0] // SQ_SIZE, mouse_pos[1] // SQ_SIZE
-    
-    # Protect against clicking outside the board
+
     if not (0 <= r < 8 and 0 <= c < 8):
         return selected_sq, moves, turn
-    
+
     if selected_sq:
         start_r, start_c = selected_sq
         piece = board[start_r][start_c]
-        
+
         if (r, c) in moves:
-            # Move is valid
             is_white = piece.isupper()
             perform_move(start_r, start_c, r, c, is_white)
             turn = "black" if turn == "white" else "white"
             selected_sq = None
             moves = []
         elif board[r][c] != "":
-            # Select different piece
             is_white = board[r][c].isupper()
             if (is_white and turn == "white") or (not is_white and turn == "black"):
                 selected_sq = (r, c)
@@ -381,23 +399,21 @@ def handle_click(mouse_pos, selected_sq, moves, turn):
                 selected_sq = None
                 moves = []
         else:
-            # Click on empty square
             selected_sq = None
             moves = []
     else:
-        # Select piece
         if board[r][c] != "":
             is_white = board[r][c].isupper()
             if (is_white and turn == "white") or (not is_white and turn == "black"):
                 selected_sq = (r, c)
                 moves = get_valid_moves(r, c)
-    
+
     return selected_sq, moves, turn
 
 
 def main():
     """
-    Main game loop. Processes events and draws the game.
+    Hlavní herní smyčka: zpracování událostí a vykreslování.
     """
     run = True
     selected_sq = None
